@@ -23,5 +23,6 @@ namespace DataAccess.Data.Models
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public string UpdatedBy { get; set; }
         public DateTime UpdatedDate { get; set; }
+        public virtual ICollection<RoomImage> RoomImages { get; set; }
     }
 }

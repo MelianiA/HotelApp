@@ -3,6 +3,7 @@ using Business.Repository.IRepository;
 using DataAccess.Data;
 using DataAccess.Data.Models;
 using DTOS;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Business.Repository
 {
-    internal class HotelRoomRepository : IHotelRoomRepository
+    public class HotelRoomRepository : IHotelRoomRepository
     {
         private readonly ApplicationDbContext dbContext;
         private readonly IMapper mapper;
@@ -26,34 +27,113 @@ namespace Business.Repository
             HotelRoom hotelRoom = mapper.Map<HotelRoomDTO, HotelRoom>(hotelRoomDTO);
             hotelRoom.CreatedDate = DateTime.Now;
             hotelRoom.CreatedBy = "";
-            var AddedHotelRoom = await dbContext.HotelRooms.AddAsync(hotelRoom);
+            var addedHotelRoom = await dbContext.HotelRooms.AddAsync(hotelRoom);
             await dbContext.SaveChangesAsync();
-            return mapper.Map<HotelRoom, HotelRoomDTO>(AddedHotelRoom.Entity);
+            return mapper.Map<HotelRoom, HotelRoomDTO>(addedHotelRoom.Entity);
         }
 
-        public Task<int> DeleteHotelRoom(int roomId)
+        //Update Room
+        public async Task<HotelRoomDTO> UpdateHotelRoom(int roomId, HotelRoomDTO hotelRoomDTO)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (roomId == hotelRoomDTO.Id)
+                {
+                    //valid
+                    HotelRoom roomToUpdate = await dbContext.HotelRooms.FindAsync(roomId);
+                    HotelRoom room = mapper.Map<HotelRoomDTO, HotelRoom>(hotelRoomDTO, roomToUpdate);
+                    room.UpdatedBy = "";
+                    room.UpdatedDate = DateTime.Now;
+                    var updatedRoom = dbContext.HotelRooms.Update(room);
+                    await dbContext.SaveChangesAsync();
+                    return mapper.Map<HotelRoom, HotelRoomDTO>(updatedRoom.Entity);
+                }
+                else
+                {
+                    //invalid
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
-        public Task<IEnumerable<HotelRoomDTO>> GetAllHotelRooms()
+        //Get Room Details
+        public async Task<HotelRoomDTO> GetHotelRoom(int roomId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                HotelRoomDTO roomDetailsDTO = mapper.Map<HotelRoom, HotelRoomDTO>(
+                    await dbContext.HotelRooms.FirstOrDefaultAsync(r => r.Id == roomId));
+
+                return roomDetailsDTO;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
-        public Task<HotelRoomDTO> GetHotelRoom(int roomId)
+        //Get All Rooms Details
+        public async Task<IEnumerable<HotelRoomDTO>> GetAllHotelRooms()
         {
-            throw new NotImplementedException();
+            try
+            {
+                IEnumerable<HotelRoomDTO> roomsDetailsDTOs =
+                            mapper.Map<IEnumerable<HotelRoom>, IEnumerable<HotelRoomDTO>>
+                            (dbContext.HotelRooms);
+
+                return roomsDetailsDTOs;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
-        public Task<bool> IsRoomUnique(string name)
+        //Check If Room Name Is Unique
+        public async Task<bool> IsRoomUnique(string name, int roomId=0)
         {
-            throw new NotImplementedException();
+            if (roomId == 0)
+            {
+                HotelRoom hotelRoom = await dbContext.HotelRooms.FirstOrDefaultAsync(r => r.Name.ToLower() == name.ToLower());
+                if (hotelRoom == null)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                HotelRoom hotelRoom = await dbContext.HotelRooms.FirstOrDefaultAsync(
+                    r => r.Name.ToLower() == name.ToLower() && r.Id != roomId);
+                if (hotelRoom == null)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            
         }
 
-        public Task<HotelRoomDTO> UpdateHotelRoom(int roomId, HotelRoomDTO hotelRoomDTO)
+        //Delete Room
+        public async Task<int> DeleteHotelRoom(int roomId)
         {
-            throw new NotImplementedException();
+            var roomToDelete = await dbContext.HotelRooms.FindAsync(roomId);
+            if (roomToDelete != null)
+            {
+                dbContext.HotelRooms.Remove(roomToDelete);
+                return await dbContext.SaveChangesAsync();//return number of deleted records 
+            }
+            return 0;
         }
     }
 }

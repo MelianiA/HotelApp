@@ -1,0 +1,99 @@
+﻿@page "/hotel-room/create"
+@page "/hotel-room/edit/{Id:int}"
+@inject IHotelRoomRepository HotelRoomRepository
+@inject NavigationManager Navigation
+@inject IJSRuntime IJSRuntime
+
+
+<div class="row">
+    <h3 class="card-title text-info">@Title Hotel Room</h3>
+    <div class="col-md-12">
+        <div>
+            <EditForm Model="RoomModel" OnValidSubmit="UpsertRoom">
+                <DataAnnotationsValidator />
+                <div class="form-group">
+                    <label>Name</label>
+                    <InputText @bind-Value="RoomModel.Name" class="form-control"></InputText>
+                    <ValidationMessage For="()=>RoomModel.Name" />
+                </div>
+                <div class="form-group">
+                    <label>Occupancy</label>
+                    <InputNumber @bind-Value="RoomModel.Occupancy" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>RoomModel.Occupancy" />
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <InputNumber @bind-Value="RoomModel.Price" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>RoomModel.Price" />
+                </div>
+                <div class="form-group">
+                    <label>Details</label>
+                    <InputTextArea @bind-Value="RoomModel.Details" class="form-control"></InputTextArea>
+                    <ValidationMessage For="()=>RoomModel.Details" />
+                </div>
+                <div class="form-group">
+                    <label>Area</label>
+                    <InputText @bind-Value="RoomModel.Area" class="form-control"></InputText>
+                    <ValidationMessage For="()=>RoomModel.Area" />
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-primary">@Title Room</button>
+                    <NavLink href="hotel-room" class="btn btn-secondary">Back</NavLink>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    public string Title { get; set; } = "Create";
+    public HotelRoomDTO RoomModel { get; set; } = new HotelRoomDTO();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != null)
+        {
+            Title = "Update";
+            RoomModel = await HotelRoomRepository.GetHotelRoom(Id.Value);
+
+        }
+        else
+        {
+        }
+    }
+
+    private async Task UpsertRoom()
+    {
+        try
+        {
+            bool isUnique = await HotelRoomRepository.IsRoomUnique(RoomModel.Name, RoomModel.Id);
+            if (!isUnique)
+            {
+                await IJSRuntime.ToastrError("Room name already exist");
+                return;
+            }
+
+            if (RoomModel.Id != 0 && Title == "Update")
+            {
+                var updatedRoom = await HotelRoomRepository.UpdateHotelRoom(RoomModel.Id, RoomModel);
+                Navigation.NavigateTo("hotel-room");
+                await IJSRuntime.ToastrSuccess("Room updated successfuly");
+            }
+            else
+            {
+                //create
+                var createdRoom = await HotelRoomRepository.CreateHotelRoom(RoomModel);
+                Navigation.NavigateTo("hotel-room");
+                await IJSRuntime.ToastrSuccess("Room created successfuly");
+            }
+
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+    }
+
+}
