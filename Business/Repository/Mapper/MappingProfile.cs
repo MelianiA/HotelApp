@@ -14,7 +14,7 @@ namespace Business.Repository.Mapper
         public MappingProfile()
         {
             CreateMap<HotelRoomDTO, HotelRoom>().ReverseMap();
-            //CreateMap<HotelRoom, HotelRoomDTO>();
+            CreateMap<RoomImageDTO, RoomImage>().ReverseMap();
         }
     }
 }

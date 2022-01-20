@@ -66,7 +66,9 @@ namespace Business.Repository
             try
             {
                 HotelRoomDTO roomDetailsDTO = mapper.Map<HotelRoom, HotelRoomDTO>(
-                    await dbContext.HotelRooms.FirstOrDefaultAsync(r => r.Id == roomId));
+                    await dbContext.HotelRooms
+                        .Include(r=> r.RoomImages)
+                        .FirstOrDefaultAsync(r => r.Id == roomId));
 
                 return roomDetailsDTO;
             }
@@ -83,7 +85,7 @@ namespace Business.Repository
             {
                 IEnumerable<HotelRoomDTO> roomsDetailsDTOs =
                             mapper.Map<IEnumerable<HotelRoom>, IEnumerable<HotelRoomDTO>>
-                            (dbContext.HotelRooms);
+                            (dbContext.HotelRooms.Include(r => r.RoomImages));
 
                 return roomsDetailsDTOs;
             }

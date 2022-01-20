@@ -2,6 +2,8 @@ using Business.Repository;
 using Business.Repository.IRepository;
 using DataAccess.Data;
 using HotelAppServer.Data;
+using HotelAppServer.Service;
+using HotelAppServer.Service.IService;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
@@ -35,6 +37,8 @@ namespace HotelAppServer
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             services.AddScoped<IHotelRoomRepository, HotelRoomRepository>();
+            services.AddScoped<IRoomImageRepository, RoomImageRepository>();
+            services.AddScoped<IFileUpload, FileUpload>();
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
