@@ -21,4 +21,8 @@
     <ProjectReference Include="..\DTOS\DTOS.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\RoomImages\" />
+  </ItemGroup>
+
 </Project>

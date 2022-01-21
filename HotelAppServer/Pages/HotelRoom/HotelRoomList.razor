@@ -1,7 +1,10 @@
 ﻿@page "/hotel-room"
+@using DTOS
+@using Business.Repository.IRepository
 @inject IHotelRoomRepository HotelRoomRepository
-
-
+@inject IFileUpload FileUpload
+@inject IJSRuntime IJSRuntime
+@inject NavigationManager Navigation
 <div class="row mt-3">
     <div class="col-8">
         <h3 class="card-title text-info">Hotel Rooms</h3>
@@ -10,7 +13,6 @@
         <NavLink href="hotel-room/create" class="btn btn-info form-control">Add New Room</NavLink>
     </div>
 </div>
-
 <div class="row mt-4">
     <div class="col-12">
         <table class="table table-bordered table-hover text-center">
@@ -36,7 +38,9 @@
                             <td>@Room.Price.ToString("c")</td>
                             <td>@Room.Area</td>
                             <td>
-                               <NavLink href="@($"hotel-room/edit/{Room.Id}")" class="btn btn-primary">Edit</NavLink>
+                                <NavLink href="@($"hotel-room/edit/{Room.Id}")"
+                                         class="btn btn-primary">Edit</NavLink>
+                                <button class="btn btn-danger" @onclick="()=>DeleteRoom(Room.Id)">Delete</button>
                             </td>
                         </tr>
                     }
@@ -44,7 +48,7 @@
                 else
                 {
                     <tr>
-                        <th>
+                        <th colspan="5">
                             No Rooms
                         </th>
                     </tr>
@@ -56,9 +60,28 @@
 
 @code {
     public IEnumerable<HotelRoomDTO> Rooms { get; set; } = new List<HotelRoomDTO>();
-    protected override async void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Rooms = await HotelRoomRepository.GetAllHotelRooms();
-        base.OnInitialized();
     }
+
+    public async Task DeleteRoom(int? roomId)
+    {
+        bool DeleteConfirmResult = await IJSRuntime.ShowConfirm();
+        if (DeleteConfirmResult && roomId != null)
+        {
+            HotelRoomDTO RoomToDelete = await HotelRoomRepository.GetHotelRoom(roomId.Value);
+            foreach (var image in RoomToDelete.RoomImages)
+            {
+                var imageName = image.ImageUrl.Replace($"{Navigation.BaseUri}RoomImages/", "");
+                FileUpload.DeleteFile(imageName);
+            }
+            await HotelRoomRepository.DeleteHotelRoom(roomId.Value);
+            Rooms = await HotelRoomRepository.GetAllHotelRooms();
+            await IJSRuntime.ToastrSuccess("Room deleted successfully");
+
+        }
+
+    }
+
 }

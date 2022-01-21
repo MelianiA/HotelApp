@@ -1,18 +1,20 @@
 ﻿@page "/hotel-room/create"
 @page "/hotel-room/edit/{Id:int}"
-
+@using System.IO
+@using DTOS
+@using Business.Repository.IRepository
 @inject IHotelRoomRepository HotelRoomRepository
 @inject IRoomImageRepository RoomImageRepository
 @inject NavigationManager Navigation
-@inject IJSRuntime IJSRuntime
+@inject IJSRuntime  IJSRuntime
 @inject IFileUpload FileUpload
-
 <div class="row">
-    <h3 class="card-title text-info">@Title Hotel Room</h3>
+    <h3 class="card-title text-info">@title Hotel Room</h3>
     <div class="col-md-12">
         <div>
             <EditForm Model="RoomModel" OnValidSubmit="UpsertRoom">
                 <DataAnnotationsValidator />
+                @*<ValidationSummary />*@
                 <div class="form-group">
                     <label>Name</label>
                     <InputText @bind-Value="RoomModel.Name" class="form-control"></InputText>
@@ -29,28 +31,31 @@
                     <ValidationMessage For="()=>RoomModel.Price" />
                 </div>
                 <div class="form-group">
-                    <label>Details</label>
-                    <InputTextArea @bind-Value="RoomModel.Details" class="form-control"></InputTextArea>
-                    <ValidationMessage For="()=>RoomModel.Details" />
-                </div>
-                <div class="form-group">
                     <label>Area</label>
                     <InputText @bind-Value="RoomModel.Area" class="form-control"></InputText>
-                    <ValidationMessage For="()=>RoomModel.Area" />
                 </div>
-                <div class="form-group">
+
+                <div class="form-group" style="padding-top:75px">
                     <InputFile OnChange="UploadImage" multiple></InputFile>
                     <div class="row">
+                        @if (ShowSpinner)
+                        {
+                            <div class="col-md-12">
+                                <span>
+                                    <i class="fas fa-spinner fa-pulse"></i>
+                                    Please wait>> Images are uploading
+                                </span>
+                            </div>
+                        }
                         @if (RoomModel.ImagesUrls != null && RoomModel.ImagesUrls.Count > 0)
                         {
                             int serial = 1;
                             foreach (var imageUrl in RoomModel.ImagesUrls)
                             {
-                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mt-3">
+                                <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mt-3">
                                     <img src="@imageUrl" class="room-image" />
                                     <span class="room-serial">@serial</span>
-                                    <button type="button" @onclick="()=>DeleteImage(imageUrl)" 
-                                                class="btn btn-danger mt-1 room-delete">
+                                    <button type="button" @onclick="()=>DeleteImage(imageUrl)" class="btn btn-danger mt-1 room-delete">
                                         X
                                     </button>
                                 </div>
@@ -60,7 +65,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <button class="btn btn-primary">@Title Room</button>
+                    <button class="btn btn-primary">@title Room</button>
                     <NavLink href="hotel-room" class="btn btn-secondary">Back</NavLink>
                 </div>
             </EditForm>
@@ -69,17 +74,19 @@
 </div>
 
 @code {
-    [Parameter] public int? Id { get; set; }
-    public string Title { get; set; } = "Create";
+    [Parameter]
+    public int? Id { get; set; }
+    public string title { get; set; } = "Create";
     public HotelRoomDTO RoomModel { get; set; } = new HotelRoomDTO();
     public RoomImageDTO RoomImage { get; set; } = new RoomImageDTO();
-    public List<string> DeletedImagesUrls { get; set; }
-
+    public List<string> DeletedImagesUrls { get; set; } = new List<string>();
+    public bool ShowSpinner { get; set; }
     protected override async Task OnInitializedAsync()
     {
         if (Id != null)
         {
-            Title = "Update";
+            //Update room
+            title = "Update";
             RoomModel = await HotelRoomRepository.GetHotelRoom(Id.Value);
             if (RoomModel?.RoomImages != null)
             {
@@ -88,9 +95,33 @@
         }
         else
         {
+            //Create room
+            RoomModel = new HotelRoomDTO();
         }
     }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        bool loading = true;
+        while (loading)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(RoomModel.Details))
+                {
 
+                }
+                loading = false;
+            }
+            catch
+            {
+                await Task.Delay(10);
+                loading = true;
+            }
+        }
+
+
+    }
     private async Task UpsertRoom()
     {
         try
@@ -102,50 +133,53 @@
                 return;
             }
 
-            if (RoomModel.Id != 0 && Title == "Update")
+            if (RoomModel.Id != 0 && title == "Update")
             {
                 //Update
                 var updatedRoom = await HotelRoomRepository.UpdateHotelRoom(RoomModel.Id, RoomModel);
-                if (RoomModel.ImagesUrls != null) //&& RoomModel.ImagesUrls.Any() 
+                if (RoomModel.ImagesUrls != null )
                 {
                     if (DeletedImagesUrls != null && DeletedImagesUrls.Any())
                     {
-                        foreach (var deletedImageUrl in DeletedImagesUrls)
+                        foreach (var DeletedImageUrl in DeletedImagesUrls)
                         {
-                            var imageName = deletedImageUrl.Replace("RoomImages/", "");
+                            var imageName = DeletedImageUrl.Replace($"RoomImages/", "");
                             var result = FileUpload.DeleteFile(imageName);
-                            await RoomImageRepository.DeleteImageByImageUrl(deletedImageUrl);
+                            await RoomImageRepository.DeleteImageByImageUrl(DeletedImageUrl);
+
                         }
                     }
-                      await AddRoomImage(updatedRoom);
+                    await AddRoomImage(updatedRoom);
                 }
                 Navigation.NavigateTo("hotel-room");
-                await IJSRuntime.ToastrSuccess("Room updated successfuly");
+                await IJSRuntime.ToastrSuccess("room updated Successfully");
             }
             else
             {
-                //create
+                //Create
                 var createdRoom = await HotelRoomRepository.CreateHotelRoom(RoomModel);
                 await AddRoomImage(createdRoom);
                 Navigation.NavigateTo("hotel-room");
-                await IJSRuntime.ToastrSuccess("Room created successfuly");
+                await IJSRuntime.ToastrSuccess("room created Successfully");
             }
-
         }
-        catch (Exception ex)
+        catch (Exception)
         {
 
+            throw;
         }
+
     }
 
     private async Task UploadImage(InputFileChangeEventArgs e)
     {
+        ShowSpinner = true;
         try
         {
             var images = new List<string>();
-            if (e.GetMultipleFiles().Count > 0)
+            if (e.GetMultipleFiles(16).Count > 0)
             {
-                foreach (var file in e.GetMultipleFiles())
+                foreach (var file in e.GetMultipleFiles(16))
                 {
                     FileInfo fileInfo = new FileInfo(file.Name);
                     if (fileInfo.Extension.ToLower() == ".jpg" ||
@@ -157,9 +191,10 @@
                     }
                     else
                     {
-                        await IJSRuntime.ToastrError("Please select .jpg/ .png/ .jpeg file only");
+                        await IJSRuntime.ToastrError("Please select .jpg/.png/.jpeg file only");
                         return;
                     }
+
                 }
                 if (images.Any())
                 {
@@ -176,15 +211,17 @@
                 else
                 {
                     await IJSRuntime.ToastrError("Image uploading failed");
+                    return;
                 }
             }
+            ShowSpinner = false;
         }
         catch (Exception ex)
         {
+            ShowSpinner = false;
             await IJSRuntime.ToastrError(ex.Message);
         }
     }
-
     private async Task AddRoomImage(HotelRoomDTO roomDetails)
     {
         foreach (var imageUrl in RoomModel.ImagesUrls)
@@ -192,24 +229,24 @@
             if (RoomModel.RoomImages == null ||
                 RoomModel.RoomImages.Where(ri => ri.ImageUrl == imageUrl).Count() == 0)
             {
-                //add new room image
-                RoomImage = new RoomImageDTO
-                    {
-                        RoomId = roomDetails.Id,
-                        ImageUrl = imageUrl
-                    };
+                //Add new room image
+                RoomImage = new RoomImageDTO()
+                {
+                    RoomId = roomDetails.Id,
+                    ImageUrl = imageUrl
+                };
+                await RoomImageRepository.CreateRoomImage(RoomImage);
             }
-            await RoomImageRepository.CreateRoomImage(RoomImage);
+
         }
     }
-
     private async Task DeleteImage(string imageUrl)
     {
         try
         {
             var imageIndex = RoomModel.ImagesUrls.FindIndex(x => x == imageUrl);
             var imageName = imageUrl.Replace($"RoomImages/", "");
-            if (RoomModel.Id == 0 && Title == "Create")
+            if (RoomModel.Id == 0 && title == "Create")
             {
                 //Create
                 var result = FileUpload.DeleteFile(imageName);
@@ -230,5 +267,4 @@
             await IJSRuntime.ToastrError(ex.Message);
         }
     }
-
 }
