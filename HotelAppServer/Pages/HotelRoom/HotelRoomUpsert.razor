@@ -6,7 +6,7 @@
 @inject IHotelRoomRepository HotelRoomRepository
 @inject IRoomImageRepository RoomImageRepository
 @inject NavigationManager Navigation
-@inject IJSRuntime  IJSRuntime
+@inject IJSRuntime IJSRuntime
 @inject IFileUpload FileUpload
 <div class="row">
     <h3 class="card-title text-info">@title Hotel Room</h3>
@@ -34,9 +34,45 @@
                     <label>Area</label>
                     <InputText @bind-Value="RoomModel.Area" class="form-control"></InputText>
                 </div>
+                <div class="form-group" style="height:200px">
+                    <label>Details</label>
+                    <BlazoredTextEditor @ref="@QuillHtml" Placeholder="Please enter room details">
+                        <ToolbarContent>
+                            <select class="ql-header">
+                                <option selected=""></option>
+                                <option value="1"></option>
+                                <option value="2"></option>
+                                <option value="3"></option>
+                                <option value="4"></option>
+                                <option value="5"></option>
+                            </select>
+                            <span class="ql-formats">
+                                <button class="ql-bold"></button>
+                                <button class="ql-italic"></button>
+                                <button class="ql-underline"></button>
+                                <button class="ql-strike"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <select class="ql-color"></select>
+                                <select class="ql-background"></select>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-list" value="ordered"></button>
+                                <button class="ql-list" value="bullet"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-link"></button>
+                            </span>
+                        </ToolbarContent>
+                        <EditorContent>
+
+                        </EditorContent>
+                    </BlazoredTextEditor>
+                </div>
+
 
                 <div class="form-group" style="padding-top:75px">
-                    <InputFile OnChange="UploadImage" multiple></InputFile>
+                    <InputFile class="input" OnChange="UploadImage" multiple></InputFile>
                     <div class="row">
                         @if (ShowSpinner)
                         {
@@ -81,8 +117,20 @@
     public RoomImageDTO RoomImage { get; set; } = new RoomImageDTO();
     public List<string> DeletedImagesUrls { get; set; } = new List<string>();
     public bool ShowSpinner { get; set; }
+
+    public BlazoredTextEditor QuillHtml { get; set; } = new BlazoredTextEditor();
+    [CascadingParameter]
+    protected Task<AuthenticationState> AuthenticationState  { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationState;
+        if (!authState.User.Identity.IsAuthenticated)
+        {
+            var uri = new Uri(Navigation.Uri);
+
+            Navigation.NavigateTo($"/Identity/Account/Login?returnUrl={uri.LocalPath }");
+        }
         if (Id != null)
         {
             //Update room
@@ -109,6 +157,7 @@
             {
                 if (!string.IsNullOrEmpty(RoomModel.Details))
                 {
+                    await QuillHtml.LoadHTMLContent(RoomModel.Details);
 
                 }
                 loading = false;
@@ -119,9 +168,8 @@
                 loading = true;
             }
         }
-
-
     }
+
     private async Task UpsertRoom()
     {
         try
@@ -136,14 +184,15 @@
             if (RoomModel.Id != 0 && title == "Update")
             {
                 //Update
+                RoomModel.Details = await QuillHtml.GetHTML();
                 var updatedRoom = await HotelRoomRepository.UpdateHotelRoom(RoomModel.Id, RoomModel);
-                if (RoomModel.ImagesUrls != null )
+                if (RoomModel.ImagesUrls != null)
                 {
                     if (DeletedImagesUrls != null && DeletedImagesUrls.Any())
                     {
                         foreach (var DeletedImageUrl in DeletedImagesUrls)
                         {
-                            var imageName = DeletedImageUrl.Replace($"RoomImages/", "");
+                            var imageName = DeletedImageUrl.Replace($"{Navigation.BaseUri}RoomImages/", "");
                             var result = FileUpload.DeleteFile(imageName);
                             await RoomImageRepository.DeleteImageByImageUrl(DeletedImageUrl);
 
@@ -157,6 +206,7 @@
             else
             {
                 //Create
+                RoomModel.Details = await QuillHtml.GetHTML();
                 var createdRoom = await HotelRoomRepository.CreateHotelRoom(RoomModel);
                 await AddRoomImage(createdRoom);
                 Navigation.NavigateTo("hotel-room");
@@ -224,28 +274,32 @@
     }
     private async Task AddRoomImage(HotelRoomDTO roomDetails)
     {
-        foreach (var imageUrl in RoomModel.ImagesUrls)
+        if (RoomModel.ImagesUrls is not null)
         {
-            if (RoomModel.RoomImages == null ||
-                RoomModel.RoomImages.Where(ri => ri.ImageUrl == imageUrl).Count() == 0)
+            foreach (var imageUrl in RoomModel.ImagesUrls)
             {
-                //Add new room image
-                RoomImage = new RoomImageDTO()
+                if (RoomModel.RoomImages == null ||
+                    RoomModel.RoomImages.Where(ri => ri.ImageUrl == imageUrl).Count() == 0)
                 {
-                    RoomId = roomDetails.Id,
-                    ImageUrl = imageUrl
-                };
-                await RoomImageRepository.CreateRoomImage(RoomImage);
-            }
+                    //Add new room image
+                    RoomImage = new RoomImageDTO()
+                        {
+                            RoomId = roomDetails.Id,
+                            ImageUrl = imageUrl
+                        };
+                    await RoomImageRepository.CreateRoomImage(RoomImage);
+                }
 
+            }
         }
+
     }
     private async Task DeleteImage(string imageUrl)
     {
         try
         {
             var imageIndex = RoomModel.ImagesUrls.FindIndex(x => x == imageUrl);
-            var imageName = imageUrl.Replace($"RoomImages/", "");
+            var imageName = imageUrl.Replace($"{Navigation.BaseUri}RoomImages/", "");
             if (RoomModel.Id == 0 && title == "Create")
             {
                 //Create

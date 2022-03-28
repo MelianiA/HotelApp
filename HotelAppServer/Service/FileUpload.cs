@@ -1,6 +1,7 @@
 ﻿using HotelAppServer.Service.IService;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -10,9 +11,12 @@ namespace HotelAppServer.Service
     public class FileUpload : IFileUpload
     {
         private readonly IWebHostEnvironment webHostEnvironment;
-        public FileUpload(IWebHostEnvironment webHostEnvironment)
+        private readonly IHttpContextAccessor httpContextAccessor;
+
+        public FileUpload(IWebHostEnvironment webHostEnvironment, IHttpContextAccessor httpContextAccessor)
         {
             this.webHostEnvironment = webHostEnvironment;
+            this.httpContextAccessor = httpContextAccessor;
         }
         public bool DeleteFile(string fileName)
         {
@@ -42,16 +46,17 @@ namespace HotelAppServer.Service
                 var filePath = Path.Combine(fileDirectory, fileName);
 
                 var memoryStream = new MemoryStream();
-                await file.OpenReadStream(maxAllowedSize:3*1024*1024).CopyToAsync(memoryStream);
+                await file.OpenReadStream(maxAllowedSize: 3 * 1024 * 1024).CopyToAsync(memoryStream);
 
                 if (!Directory.Exists(fileDirectory))
                     Directory.CreateDirectory(fileDirectory);
 
-                await using (var fs = new FileStream(filePath,FileMode.Create,FileAccess.Write))
+                await using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
                 {
                     memoryStream.WriteTo(fs);
                 }
-                var fullPath = $"RoomImages/{fileName}";
+                var url = $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host.Value}/";
+                var fullPath = $"{url}RoomImages/{fileName}";
                 return fullPath;
             }
             catch (Exception ex)

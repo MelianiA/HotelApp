@@ -5,6 +5,8 @@
 @inject IFileUpload FileUpload
 @inject IJSRuntime IJSRuntime
 @inject NavigationManager Navigation
+@attribute [Authorize]
+
 <div class="row mt-3">
     <div class="col-8">
         <h3 class="card-title text-info">Hotel Rooms</h3>
@@ -79,7 +81,6 @@
             await HotelRoomRepository.DeleteHotelRoom(roomId.Value);
             Rooms = await HotelRoomRepository.GetAllHotelRooms();
             await IJSRuntime.ToastrSuccess("Room deleted successfully");
-
         }
 
     }

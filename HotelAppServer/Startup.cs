@@ -1,4 +1,4 @@
-using Business.Repository;
+ using Business.Repository;
 using Business.Repository.IRepository;
 using DataAccess.Data;
 using HotelAppServer.Data;
@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,11 +36,17 @@ namespace HotelAppServer
             services.AddDbContext<ApplicationDbContext>(
                 options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders()
+                .AddDefaultUI();
 
             services.AddScoped<IHotelRoomRepository, HotelRoomRepository>();
+            services.AddScoped<IAmenityRepository, AmenityRepository>();
             services.AddScoped<IRoomImageRepository, RoomImageRepository>();
             services.AddScoped<IFileUpload, FileUpload>();
             services.AddRazorPages();
+            services.AddHttpContextAccessor();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
         }
@@ -62,9 +69,12 @@ namespace HotelAppServer
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapRazorPages();
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
             });

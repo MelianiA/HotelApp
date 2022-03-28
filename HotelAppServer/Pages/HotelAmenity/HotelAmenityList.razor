@@ -1,0 +1,86 @@
+﻿@page "/hotel-amenity"
+@using DTOS
+@using Business.Repository.IRepository
+@inject IAmenityRepository AmenityRepository
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@attribute [Authorize]
+
+<div class="row mt-4">
+    <div class="col-8">
+        <h4 class="card-title text-info">Hotel Amenity</h4>
+    </div>
+    <div class="col-3 offset-1">
+        <NavLink href="@($"hotel-amenity/create")" class="btn btn-info form-control">Add New Amenity </NavLink>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-md-12">
+        <table class="table table-bordered table-hover text-center" id="tblHotelAmenity">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Timing</th>
+                    <th>Icon</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (HotelAmenities.Any())
+                {
+                    foreach (var amenity in HotelAmenities)
+                    {
+    <tr>
+        <td>@amenity.Name</td>
+        <td>@amenity.Timing</td>
+        <td><i class="@amenity.IconStyle fa-2x"></i></td>
+        <td>
+            <NavLink href="@($"hotel-amenity/edit/{amenity.Id}")" class="btn btn-primary">Edit</NavLink>
+            <button class="btn btn-danger" @onclick="() => DeleteAmenity(amenity.Id)">Delete</button>
+        </td>
+
+    </tr>
+ }
+}
+else
+{
+<tr>
+    <td colspan="9">No records found</td>
+</tr>
+}
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+
+@code { private IEnumerable<HotelAmenityDTO> HotelAmenities { get; set; } = new List<HotelAmenityDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        HotelAmenities = await AmenityRepository.GetAllHotelAmenity();
+    }
+
+
+
+    public async Task DeleteAmenity(int? amenityId)
+    {
+        bool DeleteConfirmResult = await JsRuntime.ShowConfirm();
+        if (DeleteConfirmResult && amenityId != null)
+        {
+            try
+            {
+                var result = await AmenityRepository.DeleteHotelAmenity(amenityId.Value);
+                await JsRuntime.ToastrSuccess("Amenity Deleted successfully");
+            }
+            catch (Exception e)
+            {
+                await JsRuntime.ToastrError(e.Message);
+            }
+            HotelAmenities = await AmenityRepository.GetAllHotelAmenity();
+
+        }
+
+    } }

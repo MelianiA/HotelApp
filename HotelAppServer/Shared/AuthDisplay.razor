@@ -1,0 +1,16 @@
+﻿<AuthorizeView>
+    <Authorized>
+        Welcome back @context.User.Identity.Name
+        <NavLink href="Identity/Account/Logout">Logout</NavLink>
+    </Authorized>
+    <NotAuthorized>
+
+        <NavLink href="Identity/Account/Register">Register</NavLink>
+        <NavLink href="Identity/Account/Login">Login</NavLink>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+
+}
