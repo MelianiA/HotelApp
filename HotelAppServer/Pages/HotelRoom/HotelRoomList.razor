@@ -5,7 +5,7 @@
 @inject IFileUpload FileUpload
 @inject IJSRuntime IJSRuntime
 @inject NavigationManager Navigation
-@attribute [Authorize]
+@attribute [Authorize(Roles = SD.Role_Admin)]
 
 <div class="row mt-3">
     <div class="col-8">

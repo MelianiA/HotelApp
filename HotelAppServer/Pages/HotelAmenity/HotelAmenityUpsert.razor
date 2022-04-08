@@ -1,10 +1,13 @@
 ﻿@page "/hotel-amenity/create"
 @page "/hotel-amenity/edit/{Id:int}"
+
 @using Business.Repository.IRepository
 @using DTOS
 @inject IAmenityRepository AmenityRepository
 @inject NavigationManager NavigationManager
 @inject IJSRuntime jsRuntime
+@inject NavigationManager Navigation
+
 
 <div class="row mt-2 mb-5">
     <h3 class="card-title text-info mb-3 ml-3">@title Hotel Amenity</h3>
@@ -51,13 +54,24 @@
 </div>
 
 @code
-{ [Parameter]
+{
+    [Parameter]
     public int? Id { get; set; }
     internal HotelAmenityDTO AmenityModel { get; set; } = new HotelAmenityDTO();
     internal string title { get; set; } = "Create";
+    [CascadingParameter]
+    protected Task<AuthenticationState> AuthenticationState { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationState;
+        if (!authState.User.Identity.IsAuthenticated)
+        {
+            var uri = new Uri(Navigation.Uri);
+
+            Navigation.NavigateTo($"/Identity/Account/Login?returnUrl={uri.LocalPath }");
+        }
+
         if (Id != null)
         {
             //we work with update
@@ -108,4 +122,5 @@
         {
             await jsRuntime.ToastrError(ex.Message);
         }
-    } }
+    }
+ }

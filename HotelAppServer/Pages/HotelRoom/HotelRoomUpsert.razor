@@ -8,6 +8,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime IJSRuntime
 @inject IFileUpload FileUpload
+
 <div class="row">
     <h3 class="card-title text-info">@title Hotel Room</h3>
     <div class="col-md-12">
@@ -119,13 +120,14 @@
     public bool ShowSpinner { get; set; }
 
     public BlazoredTextEditor QuillHtml { get; set; } = new BlazoredTextEditor();
+
     [CascadingParameter]
     protected Task<AuthenticationState> AuthenticationState  { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationState;
-        if (!authState.User.Identity.IsAuthenticated)
+        if (!authState.User.IsInRole(SD.Role_Admin))
         {
             var uri = new Uri(Navigation.Uri);
 
