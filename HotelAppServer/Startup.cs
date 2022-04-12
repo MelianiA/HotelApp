@@ -1,7 +1,6 @@
- using Business.Repository;
+using Business.Repository;
 using Business.Repository.IRepository;
 using DataAccess.Data;
-using DataAccess.Data.Models;
 using HotelAppServer.Data;
 using HotelAppServer.Service;
 using HotelAppServer.Service.IService;
@@ -34,14 +33,11 @@ namespace HotelAppServer
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ApplicationDbContext>(
-                options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-            services.AddIdentity<ApplicationUser, IdentityRole>()
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders()
-                .AddDefaultUI();
+                .AddDefaultTokenProviders().AddDefaultUI();
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<IHotelRoomRepository, HotelRoomRepository>();
             services.AddScoped<IAmenityRepository, AmenityRepository>();
@@ -74,7 +70,6 @@ namespace HotelAppServer
             app.UseAuthentication();
             app.UseAuthorization();
             dbInitializer.Initialize();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapRazorPages();
