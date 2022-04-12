@@ -1,8 +1,11 @@
 ﻿@inherits LayoutComponentBase
 
-<NavMenu />
-<main>
-    <article class="content px-4">
-        @Body
-    </article>
-</main>
+<Animate Animation="Animations.FadeIn" Duration="TimeSpan.FromSeconds(2)">
+    <NavMenu />
+    <div class="main">
+        <div class="content px-4">
+            @Body
+        </div>
+    </div>
+
+</Animate>

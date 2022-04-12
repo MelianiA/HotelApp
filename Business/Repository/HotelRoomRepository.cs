@@ -61,7 +61,8 @@ namespace Business.Repository
         }
 
         //Get Room Details
-        public async Task<HotelRoomDTO> GetHotelRoom(int roomId)
+        public async Task<HotelRoomDTO> GetHotelRoom(int roomId, string checkInDateStr,
+                                                                        string checkOutDateStr)
         {
             try
             {
@@ -77,7 +78,8 @@ namespace Business.Repository
         }
 
         //Get All Rooms Details
-        public async Task<IEnumerable<HotelRoomDTO>> GetAllHotelRooms()
+        public async Task<IEnumerable<HotelRoomDTO>> GetAllHotelRooms(string checkInDateStr,
+                                                                        string checkOutDateStr)
         {
             try
             {
